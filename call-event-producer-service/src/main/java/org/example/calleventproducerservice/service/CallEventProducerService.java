@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.calleventproducerservice.model.MockAgent;
 import org.example.calleventproducerservice.model.MockAgentManager;
 import org.springframework.beans.factory.annotation.Value;
-import org.example.calleventproducerservice.model.CallEvent;
+//import org.example.calleventproducerservice.model.CallEvent;
+import org.example.commonmodel.model.CallEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ResourceLoader;
@@ -82,14 +83,11 @@ public class CallEventProducerService {
             String calleeNumber,
             String queueId,
             String requestedAgentId, // manager will assign available
-            String interactionId,
             long startTime,
             int callDuration // in seconds
     ) {
         log.info("[{}] Starting simulation...", callId);
 
-        String accountId = "2bab475dd0ee591598ef370f113e7075";
-        String accountName = "cc";
         String presenceId = callerNumber + "@10.64.157.4";
         String toUri = calleeNumber + "@10.52.125.34";
         String fromUri = callerNumber + "@10.64.157.4";
@@ -98,14 +96,18 @@ public class CallEventProducerService {
         MockAgent assignedAgent = null; // Agent actually assigned to this call
 
         try {
-            // 1. CHANNEL_CREATE (Inbound Leg)
+            // CHANNEL_CREATE (Inbound Leg)
             CallEvent createEvent = createBaseCallEvent(callId, "CHANNEL_CREATE", currentTime, "inbound", callerNumber, callerNumber, calleeNumber, presenceId, toUri, fromUri);
+            createEvent.setQueueId(queueId);
+            createEvent.setVcNumber(calleeNumber);
             sendCallEvent(callId, createEvent);
             sleep(50); // Small delay before next event
 
-            // 2. CHANNEL_QUEUE (Inbound Leg)
+            // CHANNEL_QUEUE (Inbound Leg)
             currentTime += random.nextInt(500) + 100;
             CallEvent queueEvent = createBaseCallEvent(callId, "CHANNEL_QUEUE", currentTime, "inbound", callerNumber, callerNumber, calleeNumber, presenceId, toUri, fromUri);
+            queueEvent.setQueueId(queueId);
+            queueEvent.setVcNumber(calleeNumber);
             sendCallEvent(callId, queueEvent);
             log.info("[{}] Call entered queue {}.", callId, queueId);
 
@@ -137,6 +139,8 @@ public class CallEventProducerService {
                 currentTime = System.currentTimeMillis(); // Use actual current time for destroy
                 CallEvent destroyAbandoned = createBaseCallEvent(callId, "CHANNEL_DESTROY", currentTime, "inbound", callerNumber, callerNumber, calleeNumber, presenceId, toUri, fromUri);
                 destroyAbandoned.setHangupCause("NO_ANSWER");
+                destroyAbandoned.setQueueId(queueId);
+                destroyAbandoned.setVcNumber(calleeNumber);
                 sendCallEvent(callId, destroyAbandoned);
                 return; // End simulation for this call
             }
@@ -146,12 +150,16 @@ public class CallEventProducerService {
             String agentLegCallId = "AGENT_LEG-" + UUID.randomUUID().toString();
             CallEvent agentCreateEvent = createBaseCallEvent(agentLegCallId, "CHANNEL_CREATE", currentTime, "outbound", "nouser@cc.ipcc.vn", callerNumber, assignedAgent.getAgentId() + "@cc.ipcc.vn", assignedAgent.getAgentId() + "@cc.ipcc.vn", assignedAgent.getAgentId() + "@cc.ipcc.vn", "nouser@cc.ipcc.vn");
             agentCreateEvent.setOtherLegCallID(callId);
+            agentCreateEvent.setQueueId(queueId);
+            agentCreateEvent.setVcNumber(calleeNumber);
             sendCallEvent(agentLegCallId, agentCreateEvent);
             sleep(50);
 
             // CHANNEL_ANSWER (Inbound Leg)
             currentTime += random.nextInt(500) + 100;
             CallEvent answerInboundEvent = createBaseCallEvent(callId, "CHANNEL_ANSWER", currentTime, "inbound", callerNumber, callerNumber, calleeNumber, presenceId, toUri, fromUri);
+            answerInboundEvent.setQueueId(queueId);
+            answerInboundEvent.setVcNumber(calleeNumber);
             sendCallEvent(callId, answerInboundEvent);
             sleep(50);
 
@@ -159,6 +167,8 @@ public class CallEventProducerService {
             currentTime += random.nextInt(100);
             CallEvent answerOutboundEvent = createBaseCallEvent(agentLegCallId, "CHANNEL_ANSWER", currentTime, "outbound", "nouser@cc.ipcc.vn", callerNumber, assignedAgent.getAgentId() + "@cc.ipcc.vn", assignedAgent.getAgentId() + "@cc.ipcc.vn", assignedAgent.getAgentId() + "@cc.ipcc.vn", "nouser@cc.ipcc.vn");
             answerOutboundEvent.setOtherLegCallID(callId);
+            answerOutboundEvent.setQueueId(queueId);
+            answerOutboundEvent.setVcNumber(calleeNumber);
             sendCallEvent(agentLegCallId, answerOutboundEvent);
             sleep(50);
 
@@ -168,6 +178,8 @@ public class CallEventProducerService {
             bridgeEvent.setOtherLegCallID(callId);
             bridgeEvent.setOtherLegDirection("inbound");
             bridgeEvent.setOtherLegDestinationNumber(calleeNumber);
+            bridgeEvent.setQueueId(queueId);
+            bridgeEvent.setVcNumber(calleeNumber);
             sendCallEvent(agentLegCallId, bridgeEvent);
             log.info("[{}] Call bridged. Agent: {}. Talking for {}s", callId, assignedAgent.getAgentId(), callDuration);
             sleep(50);
@@ -184,6 +196,8 @@ public class CallEventProducerService {
             unbridgeAgentEvent.setOtherLegDestinationNumber(calleeNumber);
             unbridgeAgentEvent.setHangupCode("sip:200");
             unbridgeAgentEvent.setHangupCause("NORMAL_CLEARING");
+            unbridgeAgentEvent.setQueueId(queueId);
+            unbridgeAgentEvent.setVcNumber(calleeNumber);
             sendCallEvent(agentLegCallId, unbridgeAgentEvent);
             sleep(50);
 
@@ -195,6 +209,8 @@ public class CallEventProducerService {
             destroyAgentEvent.setOtherLegDestinationNumber(calleeNumber);
             destroyAgentEvent.setHangupCode("sip:200");
             destroyAgentEvent.setHangupCause("NORMAL_CLEARING");
+            destroyAgentEvent.setQueueId(queueId);
+            destroyAgentEvent.setVcNumber(calleeNumber);
             sendCallEvent(agentLegCallId, destroyAgentEvent);
             sleep(50);
 
@@ -206,6 +222,8 @@ public class CallEventProducerService {
             destroyInboundEvent.setOtherLegDestinationNumber(assignedAgent.getAgentId());
             destroyInboundEvent.setHangupCode("sip:200");
             destroyInboundEvent.setHangupCause("NORMAL_CLEARING");
+            destroyInboundEvent.setQueueId(queueId);
+            destroyInboundEvent.setVcNumber(calleeNumber);
             sendCallEvent(callId, destroyInboundEvent);
 
         } finally {

@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CallSupervisor.iml" filepath="$PROJECT_DIR$/CallSupervisor.iml" />
       <module fileurl="file://$PROJECT_DIR$/call-event-producer-service/call-event-producer-service.iml" filepath="$PROJECT_DIR$/call-event-producer-service/call-event-producer-service.iml" />
     </modules>
   </component>

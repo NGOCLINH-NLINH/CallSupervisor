@@ -31,7 +31,6 @@ public class CallEventController {
             @RequestParam(defaultValue = "15") int duration
     ) {
         String callId = "SIM-" + UUID.randomUUID().toString();
-        String interactionId = UUID.randomUUID().toString().substring(0, 8);
         String queueId = CallEventProducerService.QUEUE_IDS.get(CallEventProducerService.random.nextInt(CallEventProducerService.QUEUE_IDS.size()));
 
         if (agent == null || !CallEventProducerService.AGENT_IDS.contains(agent)) {
@@ -49,7 +48,6 @@ public class CallEventController {
                     callee,
                     queueId,
                     agentFinal,
-                    interactionId,
                     startTime,
                     duration
             );
@@ -68,7 +66,6 @@ public class CallEventController {
             String agent = CallEventProducerService.AGENT_IDS.get(CallEventProducerService.random.nextInt(CallEventProducerService.AGENT_IDS.size()));
             int duration = CallEventProducerService.random.nextInt(maxDuration) + 5;
             String callId = "MULTI-SIM-" + UUID.randomUUID().toString();
-            String interactionId = UUID.randomUUID().toString().substring(0, 8);
             String queueId = CallEventProducerService.QUEUE_IDS.get(CallEventProducerService.random.nextInt(CallEventProducerService.QUEUE_IDS.size()));
 
             long startTime = System.currentTimeMillis();
@@ -80,7 +77,6 @@ public class CallEventController {
                         callee,
                         queueId,
                         agent,
-                        interactionId,
                         startTime,
                         duration
                 );

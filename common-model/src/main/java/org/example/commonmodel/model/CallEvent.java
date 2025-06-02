@@ -1,4 +1,4 @@
-package org.example.calleventproducerservice.model;
+package org.example.commonmodel.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -76,6 +76,12 @@ public class CallEvent {
 
     @JsonProperty("Channel-Created-Time")
     private Long channelCreatedTime;
+
+    @JsonProperty("Queue-ID")
+    private String queueId;
+
+    @JsonProperty("VC-Number")
+    private String vcNumber;
 
     public boolean isCreateEvent() {
         return "CHANNEL_CREATE".equals(this.eventName);

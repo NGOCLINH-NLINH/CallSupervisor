@@ -83,6 +83,9 @@ public class CallEvent {
     @JsonProperty("VC-Number")
     private String vcNumber;
 
+    @JsonProperty("Owner-ID")
+    private String ownerId;
+
     public boolean isCreateEvent() {
         return "CHANNEL_CREATE".equals(this.eventName);
     }

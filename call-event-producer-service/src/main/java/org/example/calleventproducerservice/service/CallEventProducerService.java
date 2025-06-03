@@ -152,6 +152,7 @@ public class CallEventProducerService {
             agentCreateEvent.setOtherLegCallID(callId);
             agentCreateEvent.setQueueId(queueId);
             agentCreateEvent.setVcNumber(calleeNumber);
+            agentCreateEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(agentLegCallId, agentCreateEvent);
             sleep(50);
 
@@ -169,6 +170,7 @@ public class CallEventProducerService {
             answerOutboundEvent.setOtherLegCallID(callId);
             answerOutboundEvent.setQueueId(queueId);
             answerOutboundEvent.setVcNumber(calleeNumber);
+            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(agentLegCallId, answerOutboundEvent);
             sleep(50);
 
@@ -180,6 +182,7 @@ public class CallEventProducerService {
             bridgeEvent.setOtherLegDestinationNumber(calleeNumber);
             bridgeEvent.setQueueId(queueId);
             bridgeEvent.setVcNumber(calleeNumber);
+            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(agentLegCallId, bridgeEvent);
             log.info("[{}] Call bridged. Agent: {}. Talking for {}s", callId, assignedAgent.getAgentId(), callDuration);
             sleep(50);
@@ -198,6 +201,7 @@ public class CallEventProducerService {
             unbridgeAgentEvent.setHangupCause("NORMAL_CLEARING");
             unbridgeAgentEvent.setQueueId(queueId);
             unbridgeAgentEvent.setVcNumber(calleeNumber);
+            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(agentLegCallId, unbridgeAgentEvent);
             sleep(50);
 
@@ -211,6 +215,7 @@ public class CallEventProducerService {
             destroyAgentEvent.setHangupCause("NORMAL_CLEARING");
             destroyAgentEvent.setQueueId(queueId);
             destroyAgentEvent.setVcNumber(calleeNumber);
+            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(agentLegCallId, destroyAgentEvent);
             sleep(50);
 

@@ -3,6 +3,7 @@
   <component name="Encoding">
     <file url="file://C:/Windows/System32/src/main/java" charset="UTF-8" />
     <file url="file://C:/Windows/System32/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/agent-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/call-event-producer-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/channel-event-aggregator/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/common-model/src/main/java" charset="UTF-8" />

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Call Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        h1, h3 { color: #2c3e50; }
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .stat-box {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-box h4 { margin-top: 0; color: #34495e; }
+        .stat-box .value { font-size: 2em; font-weight: bold; color: #2980b9; }
+
+        #calls-table-container {
+            margin-top: 20px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-x: auto; /* For responsiveness on small screens */
+        }
+        #calls-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        #calls-table th, #calls-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #calls-table th {
+            background-color: #4CAF50;
+            color: white;
+            position: sticky; /* Make headers sticky for scrolling */
+            top: 0;
+            z-index: 10;
+        }
+        #calls-table tr:nth-child(even) { background-color: #f2f2f2; }
+        #calls-table tr:hover { background-color: #ddd; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+        .status-badge.created { background-color: #3498db; }
+        .status-badge.queued { background-color: #f39c12; }
+        .status-badge.answered { background-color: #2ecc71; }
+        .status-badge.bridged { background-color: #1abc9c; }
+        .status-badge.unbridged { background-color: #95a5a6; }
+        .status-badge.destroyed { background-color: #c0392b; text-decoration: line-through; }
+        .status-badge.held { background-color: #e74c3c; }
+        .status-badge.unheld { background-color: #27ae60; }
+        .status-badge.no_answer { background-color: #e74c3c; } /* For abandoned calls */
+    </style>
+</head>
+<body>
+<h1>Live Call Dashboard</h1>
+
+<div class="dashboard-stats">
+    <div class="stat-box">
+        <h4>Total Active Calls</h4>
+        <span class="value" id="stat-total-active-calls">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>Calls in Queue</h4>
+        <span class="value" id="stat-calls-in-queue">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>Calls Answered</h4>
+        <span class="value" id="stat-calls-answered">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>Calls Bridged</h4>
+        <span class="value" id="stat-calls-bridged">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>Avg Queue Wait Time (s)</h4>
+        <span class="value" id="stat-avg-wait-time">0.00</span>
+    </div>
+</div>
+
+<div id="calls-table-container">
+    <h3>Current Calls Details:</h3>
+    <table id="calls-table">
+        <thead>
+        <tr>
+            <th>Call ID</th>
+            <th>Status</th>
+            <th>Caller Num</th>
+            <th>Queue ID</th>
+            <th>VC Number</th>
+            <th>Agent ID</th>
+            <th>Total Dur (s)</th>
+            <th>Talking Dur (s)</th>
+            <th>Ringing Dur (s)</th>
+            <th>Created Time</th>
+        </tr>
+        </thead>
+        <tbody id="calls-table-body">
+        </tbody>
+    </table>
+</div>
+
+<script>
+    var stompClient = null;
+    var liveCallsMap = {}; // Map to store calls by CallId
+
+    function setConnected(connected) {
+        if (connected) {
+            console.log("Connected to WebSocket");
+        } else {
+            console.log("Disconnected from WebSocket");
+            // Clear UI on disconnect
+            document.getElementById('calls-table-body').innerHTML = '';
+            liveCallsMap = {};
+            updateStatisticsDisplay({}); // Clear stats
+        }
+    }
+
+    function connect() {
+        var socket = new SockJS('/ws'); // Connect to the WebSocket endpoint
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            setConnected(true);
+            console.log('Connected: ' + frame);
+
+            // Subscribe to live call updates (from server to all clients)
+            stompClient.subscribe('/topic/live-calls', function (message) {
+                var channelEvent = JSON.parse(message.body);
+                updateCallDisplay(channelEvent);
+            });
+
+            // Subscribe to dashboard statistics updates
+            stompClient.subscribe('/topic/dashboard-stats', function (message) {
+                var stats = JSON.parse(message.body);
+                updateStatisticsDisplay(stats);
+            });
+
+            // Subscribe to initial calls (sent to this specific user on connect)
+            stompClient.subscribe('/user/queue/initial-calls', function (message) {
+                var initialCalls = JSON.parse(message.body);
+                console.log("Received initial calls:", initialCalls);
+                initialCalls.forEach(call => updateCallDisplay(call));
+                // Request current stats after initial calls
+                fetch('/api/v1/dashboard/statistics')
+                    .then(response => response.json())
+                    .then(data => updateStatisticsDisplay(data))
+                    .catch(error => console.error('Error fetching initial statistics:', error));
+            });
+
+        }, function (error) { // onError callback
+            console.error("STOMP error:", error);
+            setConnected(false);
+            setTimeout(connect, 5000); // Try to reconnect after 5 seconds
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+    }
+
+    function updateCallDisplay(channelEvent) {
+        if (channelEvent.callId) {
+            if (channelEvent.state === 'DESTROYED' || channelEvent.state === 'UNBRIDGED') { // UNBRIDGED for cleanup too
+                delete liveCallsMap[channelEvent.callId];
+            } else {
+                liveCallsMap[channelEvent.callId] = channelEvent;
+            }
+        }
+        renderCallsTable();
+    }
+
+    function renderCallsTable() {
+        var tbody = document.getElementById('calls-table-body');
+        tbody.innerHTML = ''; // Clear current table body
+
+        // Sort calls by created time, or timestamp
+        var sortedCalls = Object.values(liveCallsMap).sort((a, b) => (a.createdTime || 0) - (b.createdTime || 0));
+
+        sortedCalls.forEach(call => {
+            var row = tbody.insertRow();
+            var statusClass = call.state ? call.state.toLowerCase() : '';
+
+            row.innerHTML = `
+                    <td>${call.callId}</td>
+                    <td><span class="status-badge ${statusClass}">${call.state}</span></td>
+                    <td>${call.callerIdNumber || 'N/A'}</td>
+                    <td>${call.queueId || 'N/A'}</td>
+                    <td>${call.vcNumber || 'N/A'}</td>
+                    <td>${call.ownerId || 'N/A'}</td>
+                    <td>${call.totalDuration !== null ? call.totalDuration : 'N/A'}</td>
+                    <td>${call.talkingDuration !== null ? call.talkingDuration : 'N/A'}</td>
+                    <td>${call.ringingDuration !== null ? call.ringingDuration : 'N/A'}</td>
+                    <td>${call.createdTime ? new Date(call.createdTime).toLocaleTimeString() : 'N/A'}</td>
+                `;
+        });
+    }
+
+    function updateStatisticsDisplay(stats) {
+        document.getElementById('stat-total-active-calls').innerText = stats.totalActiveCalls !== undefined ? stats.totalActiveCalls : 0;
+        document.getElementById('stat-calls-in-queue').innerText = stats.callsInQueue !== undefined ? stats.callsInQueue : 0;
+        document.getElementById('stat-calls-answered').innerText = stats.callsAnswered !== undefined ? stats.callsAnswered : 0;
+        document.getElementById('stat-calls-bridged').innerText = stats.callsBridged !== undefined ? stats.callsBridged : 0;
+        document.getElementById('stat-avg-wait-time').innerText = stats.averageQueueWaitTimeSeconds !== undefined ? stats.averageQueueWaitTimeSeconds.toFixed(2) : '0.00';
+    }
+
+    // Initial connection
+    connect();
+</script>
+</body>
+</html>

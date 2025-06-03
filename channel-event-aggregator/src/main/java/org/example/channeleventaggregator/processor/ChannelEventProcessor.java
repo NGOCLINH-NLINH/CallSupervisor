@@ -11,7 +11,7 @@ import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
 //import org.example.channeleventaggregator.model.CallEvent;
 import org.example.commonmodel.model.CallEvent;
-import org.example.channeleventaggregator.model.ChannelEvent;
+import org.example.commonmodel.model.ChannelEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 

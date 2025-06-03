@@ -1,4 +1,4 @@
-package org.example.channeleventaggregator.model;
+package org.example.commonmodel.model;
 
 public enum State {
     CREATED,

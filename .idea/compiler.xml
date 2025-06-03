@@ -16,6 +16,7 @@
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
         </processorPath>
+        <module name="agent-server" />
         <module name="call-event-producer-service" />
         <module name="channel-event-aggregator" />
       </profile>
@@ -23,6 +24,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="agent-server" options="-parameters" />
       <module name="call-event-producer-service" options="-parameters" />
       <module name="channel-event-aggregator" options="-parameters" />
       <module name="common-model" options="-parameters" />

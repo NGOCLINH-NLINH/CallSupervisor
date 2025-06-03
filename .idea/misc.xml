@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/channel-event-aggregator/pom.xml" />
         <option value="$PROJECT_DIR$/common-model/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/agent-server/pom.xml" />
       </list>
     </option>
   </component>

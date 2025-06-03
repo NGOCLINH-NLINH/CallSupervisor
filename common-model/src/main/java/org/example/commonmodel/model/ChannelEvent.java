@@ -1,11 +1,10 @@
-package org.example.channeleventaggregator.model;
+package org.example.commonmodel.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
-import org.example.commonmodel.model.CallEvent;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -39,6 +38,7 @@ public class ChannelEvent {
     private String queueId;
     private String vcNumber;
     private String presenceId;
+    private String ownerId;
 
     // Timestamps and Durations
     private Long createdTime;
@@ -97,6 +97,7 @@ public class ChannelEvent {
 
         queueId = ObjectUtils.firstNonNull(queueId, callEvt.getQueueId());
         vcNumber = ObjectUtils.firstNonNull(vcNumber, callEvt.getVcNumber());
+        ownerId = ObjectUtils.firstNonNull(ownerId, callEvt.getOwnerId());
 
         if (callEvt.isCreateEvent()) {
             createdTime = ObjectUtils.firstNonNull(createdTime, eventTimeMs);

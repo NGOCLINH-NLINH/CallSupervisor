@@ -139,7 +139,7 @@
     }
 
     function connect() {
-        var socket = new SockJS('/ws'); // Connect to the WebSocket endpoint
+        var socket = new SockJS('http://localhost:8082/ws'); // Connect to the WebSocket endpoint
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function (frame) {
             setConnected(true);

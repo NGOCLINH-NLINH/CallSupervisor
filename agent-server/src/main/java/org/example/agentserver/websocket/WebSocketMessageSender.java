@@ -19,6 +19,7 @@ public class WebSocketMessageSender {
 
     public void sendLiveCallUpdate(ChannelEvent event) {
         log.debug("Sending live call update via WebSocket: CallId={}, State={}", event.getCallId(), event.getState());
+        messagingTemplate.convertAndSend("/topic/live-calls", event);
     }
 
     public void sendInitialCallsToUser(String userId, Object events) {

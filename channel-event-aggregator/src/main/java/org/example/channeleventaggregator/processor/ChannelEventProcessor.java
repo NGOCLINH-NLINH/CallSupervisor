@@ -32,10 +32,30 @@ public class ChannelEventProcessor {
 
             KTable<String, ChannelEvent> kzCallTable = kzCallEventStream
                     .flatMapValues(this::flatMapForChannelDestroyEvent)
+                    .selectKey((key, callEvent) -> {
+                        if (callEvent.getOtherLegCallID() != null && !callEvent.getOtherLegCallID().isEmpty() &&
+                                (callEvent.getCallID().startsWith("AGENT_LEG-") || callEvent.getCallID().startsWith("SIM-") || callEvent.getCallID().startsWith("MULTI-SIM-"))) {
+                            if (callEvent.getCallID().startsWith("SIM-") || callEvent.getCallID().startsWith("MULTI-SIM-")) {
+                                return callEvent.getCallID();
+                            } else {
+                                return callEvent.getOtherLegCallID();
+                            }
+                        }
+                        return callEvent.getCallID();
+                    })
                     .groupByKey(Grouped.with(Serdes.String(), new JsonSerde<>(CallEvent.class)))
                     .aggregate(
                             ChannelEvent::new,
-                            (key, callEvent, aggregated) -> aggregate(callEvent, aggregated),
+                            (key, callEvent, aggregated) -> {
+                                ChannelEvent currentChannelEvent = aggregated;
+                                currentChannelEvent.with(callEvent);
+                                if (callEvent.isDestroyEvent()) {
+                                    if (key.startsWith("SIM-") || key.startsWith("MULTI-SIM-")) {
+                                        return null;
+                                    }
+                                }
+                                return currentChannelEvent;
+                            },
                             materialized
                     );
 
@@ -45,6 +65,7 @@ public class ChannelEventProcessor {
         };
     }
 
+    // Redundant -> tam thoi bo
     private ChannelEvent aggregate(CallEvent callEvt, ChannelEvent aggregated) {
         if (callEvt.isDestroyEvent()) {
             aggregated.with(callEvt); // Update DESTROY event before deleting

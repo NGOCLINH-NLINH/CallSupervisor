@@ -73,7 +73,7 @@ public class CallEventProducerService {
         event.setCalleeIDNumber(toUri.split("@")[0]);
         event.setCalleeIDName(toUri.split("@")[0]);
         event.setPresenceID(presenceId);
-        event.setChannelCreatedTime(unixTimeMs * 1000);
+        event.setChannelCreatedTime(unixTimeMs);
         return event;
     }
 

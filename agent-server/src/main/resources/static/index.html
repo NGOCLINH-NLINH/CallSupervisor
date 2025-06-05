@@ -147,26 +147,41 @@
 
             // Subscribe to live call updates (from server to all clients)
             stompClient.subscribe('/topic/live-calls', function (message) {
-                var channelEvent = JSON.parse(message.body);
-                updateCallDisplay(channelEvent);
+                try {
+                    var channelEvent = JSON.parse(message.body);
+                    console.log("Received ChannelEvent:", channelEvent.callId, channelEvent.state); // Log để kiểm tra
+                    updateCallDisplay(channelEvent);
+                } catch (e) {
+                    console.error("Error parsing or processing ChannelEvent message:", e, message.body);
+                }
             });
 
             // Subscribe to dashboard statistics updates
             stompClient.subscribe('/topic/dashboard-stats', function (message) {
-                var stats = JSON.parse(message.body);
-                updateStatisticsDisplay(stats);
+                try {
+                    var stats = JSON.parse(message.body);
+                    updateStatisticsDisplay(stats);
+                } catch (e) {
+                    console.error("Error parsing or processing stats message:", e, message.body);
+                }
             });
 
             // Subscribe to initial calls (sent to this specific user on connect)
             stompClient.subscribe('/user/queue/initial-calls', function (message) {
-                var initialCalls = JSON.parse(message.body);
-                console.log("Received initial calls:", initialCalls);
-                initialCalls.forEach(call => updateCallDisplay(call));
-                // Request current stats after initial calls
-                fetch('/api/v1/dashboard/statistics')
-                    .then(response => response.json())
-                    .then(data => updateStatisticsDisplay(data))
-                    .catch(error => console.error('Error fetching initial statistics:', error));
+                try {
+                    var initialCalls = JSON.parse(message.body);
+                    console.log("Received initial calls:", initialCalls.length);
+                    // For debug: delete liveCallsMap before adding initial calls to avoid duplicates
+                    liveCallsMap = {};
+                    initialCalls.forEach(call => updateCallDisplay(call));
+                    // Request current stats after initial calls
+                    fetch('/api/v1/dashboard/statistics')
+                        .then(response => response.json())
+                        .then(data => updateStatisticsDisplay(data))
+                        .catch(error => console.error('Error fetching initial statistics:', error));
+                } catch (e) {
+                    console.error("Error parsing or processing initial calls message:", e, message.body);
+                }
             });
 
         }, function (error) { // onError callback
@@ -184,6 +199,12 @@
     }
 
     function updateCallDisplay(channelEvent) {
+        console.log("Updating Call Display: ", channelEvent);
+        if (!channelEvent || !channelEvent.callId) {
+            console.warn("Invalid channelEvent received:", channelEvent);
+            return;
+        }
+
         if (channelEvent.callId) {
             if (channelEvent.state === 'DESTROYED' || channelEvent.state === 'UNBRIDGED') { // UNBRIDGED for cleanup too
                 delete liveCallsMap[channelEvent.callId];
@@ -204,7 +225,7 @@
         sortedCalls.forEach(call => {
             var row = tbody.insertRow();
             var statusClass = call.state ? call.state.toLowerCase() : '';
-
+            console.log(call.state)
             row.innerHTML = `
                     <td>${call.callId}</td>
                     <td><span class="status-badge ${statusClass}">${call.state}</span></td>
@@ -217,6 +238,7 @@
                     <td>${call.ringingDuration !== null ? call.ringingDuration : 'N/A'}</td>
                     <td>${call.createdTime ? new Date(call.createdTime).toLocaleTimeString() : 'N/A'}</td>
                 `;
+            console.log("Rendered row for", call.callId, "with state", call.state, "and class", statusClass);
         });
     }
 

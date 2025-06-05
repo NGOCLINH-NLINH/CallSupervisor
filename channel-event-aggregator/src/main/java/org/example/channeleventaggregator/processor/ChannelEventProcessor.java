@@ -12,6 +12,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 //import org.example.channeleventaggregator.model.CallEvent;
 import org.example.commonmodel.model.CallEvent;
 import org.example.commonmodel.model.ChannelEvent;
+import org.example.commonmodel.model.State;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -33,13 +34,12 @@ public class ChannelEventProcessor {
             KTable<String, ChannelEvent> kzCallTable = kzCallEventStream
                     .flatMapValues(this::flatMapForChannelDestroyEvent)
                     .selectKey((key, callEvent) -> {
+                        if (callEvent.getCallID().startsWith("SIM-") || callEvent.getCallID().startsWith("MULTI-SIM-")) {
+                            return callEvent.getCallID();
+                        }
                         if (callEvent.getOtherLegCallID() != null && !callEvent.getOtherLegCallID().isEmpty() &&
-                                (callEvent.getCallID().startsWith("AGENT_LEG-") || callEvent.getCallID().startsWith("SIM-") || callEvent.getCallID().startsWith("MULTI-SIM-"))) {
-                            if (callEvent.getCallID().startsWith("SIM-") || callEvent.getCallID().startsWith("MULTI-SIM-")) {
-                                return callEvent.getCallID();
-                            } else {
-                                return callEvent.getOtherLegCallID();
-                            }
+                                callEvent.getCallID().startsWith("AGENT_LEG-")) {
+                            return callEvent.getOtherLegCallID();
                         }
                         return callEvent.getCallID();
                     })
@@ -49,11 +49,11 @@ public class ChannelEventProcessor {
                             (key, callEvent, aggregated) -> {
                                 ChannelEvent currentChannelEvent = aggregated;
                                 currentChannelEvent.with(callEvent);
-                                if (callEvent.isDestroyEvent()) {
-                                    if (key.startsWith("SIM-") || key.startsWith("MULTI-SIM-")) {
-                                        return null;
-                                    }
-                                }
+//                                if (currentChannelEvent.getState() == State.DESTROYED) {
+//                                    if (key.startsWith("SIM-") || key.startsWith("MULTI-SIM-")) {
+//                                        return null;
+//                                    }
+//                                }
                                 return currentChannelEvent;
                             },
                             materialized

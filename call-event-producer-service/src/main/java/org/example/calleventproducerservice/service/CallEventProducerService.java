@@ -161,6 +161,7 @@ public class CallEventProducerService {
             CallEvent answerInboundEvent = createBaseCallEvent(callId, "CHANNEL_ANSWER", currentTime, "inbound", callerNumber, callerNumber, calleeNumber, presenceId, toUri, fromUri);
             answerInboundEvent.setQueueId(queueId);
             answerInboundEvent.setVcNumber(calleeNumber);
+            answerInboundEvent.setOwnerId(assignedAgent.getAgentId());
             sendCallEvent(callId, answerInboundEvent);
             sleep(50);
 
@@ -201,8 +202,8 @@ public class CallEventProducerService {
             unbridgeAgentEvent.setHangupCause("NORMAL_CLEARING");
             unbridgeAgentEvent.setQueueId(queueId);
             unbridgeAgentEvent.setVcNumber(calleeNumber);
-            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
-            sendCallEvent(agentLegCallId, unbridgeAgentEvent);
+            unbridgeAgentEvent.setOwnerId(assignedAgent.getAgentId());
+            sendCallEvent(unbridgeAgentEvent.getCallID(), unbridgeAgentEvent);
             sleep(50);
 
             // CHANNEL_DESTROY (Agent Leg)
@@ -215,8 +216,8 @@ public class CallEventProducerService {
             destroyAgentEvent.setHangupCause("NORMAL_CLEARING");
             destroyAgentEvent.setQueueId(queueId);
             destroyAgentEvent.setVcNumber(calleeNumber);
-            answerOutboundEvent.setOwnerId(assignedAgent.getAgentId());
-            sendCallEvent(agentLegCallId, destroyAgentEvent);
+            destroyAgentEvent.setOwnerId(assignedAgent.getAgentId());
+            sendCallEvent(destroyAgentEvent.getCallID(), destroyAgentEvent);
             sleep(50);
 
             // CHANNEL_DESTROY (Inbound Leg)

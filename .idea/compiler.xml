@@ -9,7 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="common-model" />
       </profile>
-      <profile name="Annotation profile for Call Supervisor Project" enabled="true">
+      <profile name="Annotation profile for agent-server" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />

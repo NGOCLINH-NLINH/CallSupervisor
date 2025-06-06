@@ -18,7 +18,7 @@ public class AgentDashboardService {
         this.repository = repository;
     }
 
-    public Collection<ChannelEvent> getLiveCalls(String queueId, String vcNumber) {
+    public Collection<ChannelEvent> getLiveCalls(String queueId, String vcNumber, String callerNumber, String agentId) {
         Collection<ChannelEvent> filteredCalls = repository.findAllActiveCalls();
 
         if (queueId != null && !queueId.isEmpty()) {
@@ -32,6 +32,19 @@ public class AgentDashboardService {
                     .filter(call -> call.getVcNumber() != null && call.getVcNumber().equalsIgnoreCase(vcNumber))
                     .collect(Collectors.toList());
         }
+
+        if (callerNumber != null && !callerNumber.isEmpty()) {
+            filteredCalls = filteredCalls.stream()
+                    .filter(call -> call.getCallerIdNumber() != null && call.getCallerIdNumber().contains(callerNumber))
+                    .collect(Collectors.toList());
+        }
+
+        if (agentId != null && !agentId.isEmpty()) {
+            filteredCalls = filteredCalls.stream()
+                    .filter(call -> call.getOwnerId() != null && call.getOwnerId().equalsIgnoreCase(agentId))
+                    .collect(Collectors.toList());
+        }
+
         return filteredCalls;
     }
 

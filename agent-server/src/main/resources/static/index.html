@@ -26,6 +26,42 @@
         .stat-box h4 { margin-top: 0; color: #34495e; }
         .stat-box .value { font-size: 2em; font-weight: bold; color: #2980b9; }
 
+        #filter-controls {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        #filter-controls label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        #filter-controls input[type="text"] {
+            width: calc(100% - 12px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #filter-controls button {
+            padding: 10px 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        #filter-controls button:hover {
+            background-color: #4cae4c;
+        }
+
         #calls-table-container {
             margin-top: 20px;
             background-color: #ffffff;
@@ -100,6 +136,29 @@
     </div>
 </div>
 
+<div id="filter-controls">
+    <div>
+        <label for="filter-caller-number">Caller Number:</label>
+        <input type="text" id="filter-caller-number" placeholder="e.g., 0969389999">
+    </div>
+    <div>
+        <label for="filter-queue-id">Queue ID:</label>
+        <input type="text" id="filter-queue-id" placeholder="e.g., queue-sales-01">
+    </div>
+    <div>
+        <label for="filter-agent-id">Agent ID:</label>
+        <input type="text" id="filter-agent-id" placeholder="e.g., agent-001">
+    </div>
+    <div>
+        <label for="filter-vc-number">VC Number:</label>
+        <input type="text" id="filter-vc-number" placeholder="e.g., 1068">
+    </div>
+    <div>
+        <button onclick="applyFilter()">Apply Filter</button>
+        <button onclick="clearFilter()">Clear Filter</button>
+    </div>
+</div>
+
 <div id="calls-table-container">
     <h3>Current Calls Details:</h3>
     <table id="calls-table">
@@ -111,7 +170,6 @@
             <th>Queue ID</th>
             <th>VC Number</th>
             <th>Agent ID</th>
-            <th>Total Dur (s)</th>
             <th>Talking Dur (s)</th>
             <th>Ringing Dur (s)</th>
             <th>Created Time</th>
@@ -126,6 +184,12 @@
     var stompClient = null;
     var liveCallsMap = {}; // Map to store calls by CallId
     var intervalId = null;
+    var currentFilters = {
+        queueId: '',
+        vcNumber: '',
+        callerNumber: '',
+        agentId: ''
+    };
 
     function formatDuration(seconds) {
         if (seconds === null || isNaN(seconds)) {
@@ -235,9 +299,11 @@
     function renderCallsTable() {
         var tbody = document.getElementById('calls-table-body');
         tbody.innerHTML = ''; // Clear current table body
+        var filteredCalls = Object.values(liveCallsMap).filter(call => isCallMatchingFilters(call));
+        var sortedCalls = filteredCalls.sort((a, b) => (a.createdTime || 0) - (b.createdTime || 0));
 
         // Sort calls by created time, or timestamp
-        var sortedCalls = Object.values(liveCallsMap).sort((a, b) => (a.createdTime || 0) - (b.createdTime || 0));
+        // var sortedCalls = Object.values(liveCallsMap).sort((a, b) => (a.createdTime || 0) - (b.createdTime || 0));
 
         sortedCalls.forEach(call => {
             var liveTalkingDuration = 'N/A';
@@ -263,13 +329,49 @@
                     <td>${call.queueId || 'N/A'}</td>
                     <td>${call.vcNumber || 'N/A'}</td>
                     <td>${call.ownerId || 'N/A'}</td>
-                    <td>${call.totalDuration !== null ? call.totalDuration : 'N/A'}</td>
                     <td>${liveTalkingDurFormatted}</td>
                     <td>${call.ringingDuration !== null ? call.ringingDuration : 'N/A'}</td>
                     <td>${call.createdTime ? new Date(call.createdTime).toLocaleTimeString() : 'N/A'}</td>
                 `;
             console.log("Rendered row for", call.callId, "with state", call.state, "and class", statusClass);
         });
+    }
+
+    function isCallMatchingFilters(call) {
+        // Filter by Caller Number
+        if (currentFilters.callerNumber && call.callerIdNumber) {
+            if (!call.callerIdNumber.includes(currentFilters.callerNumber)) {
+                return false;
+            }
+        }
+        // Filter by Queue ID
+        if (currentFilters.queueId && call.queueId) {
+            if (!call.queueId.toLowerCase().includes(currentFilters.queueId.toLowerCase())) {
+                return false;
+            }
+        }
+        // Filter by Agent ID
+        if (currentFilters.agentId && call.ownerId) {
+            if (!call.ownerId.toLowerCase().includes(currentFilters.agentId.toLowerCase())) {
+                return false;
+            }
+        }
+        // Filter by VC Number
+        if (currentFilters.vcNumber && call.vcNumber) {
+            if (!call.vcNumber.includes(currentFilters.vcNumber)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function applyFilter() {
+        currentFilters.callerNumber = document.getElementById('filter-caller-number').value.trim();
+        currentFilters.queueId = document.getElementById('filter-queue-id').value.trim();
+        currentFilters.agentId = document.getElementById('filter-agent-id').value.trim();
+        currentFilters.vcNumber = document.getElementById('filter-vc-number').value.trim();
+
+        renderCallsTable(); // Render table with new filters
     }
 
     function updateStatisticsDisplay(stats) {

@@ -38,6 +38,20 @@ public class LiveChannelEventRepository {
                 .collect(Collectors.toList());
     }
 
+    public Collection<ChannelEvent> findCallsByCallerNumber(String callerNumber) {
+        return liveCalls.values().stream()
+                .filter(event -> event.getCallerIdNumber() != null && event.getCallerIdNumber().contains(callerNumber)) // Dùng contains để tìm kiếm một phần
+                .filter(event -> event.getState() != State.DESTROYED)
+                .collect(Collectors.toList());
+    }
+
+    public Collection<ChannelEvent> findCallsByAgentId(String agentId) {
+        return liveCalls.values().stream()
+                .filter(event -> event.getOwnerId() != null && event.getOwnerId().equalsIgnoreCase(agentId))
+                .filter(event -> event.getState() != State.DESTROYED)
+                .collect(Collectors.toList());
+    }
+
     public Collection<ChannelEvent> findCallsByVcNumber(String VcNumber) {
         return liveCalls.values().stream()
                 .filter(event -> event.getVcNumber().equalsIgnoreCase(VcNumber))

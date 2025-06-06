@@ -23,8 +23,10 @@ public class AgentDashboardController {
     @GetMapping("/live-calls")
     public ResponseEntity<Collection<ChannelEvent>> getLiveCalls(
             @RequestParam(required = false) String queueId,
-            @RequestParam(required = false) String vcNumber) {
-        Collection<ChannelEvent> liveCalls = dashboardService.getLiveCalls(queueId, vcNumber);
+            @RequestParam(required = false) String vcNumber,
+            @RequestParam(required = false) String callerNumber,
+            @RequestParam(required = false) String agentId) {
+        Collection<ChannelEvent> liveCalls = dashboardService.getLiveCalls(queueId, vcNumber, callerNumber, agentId);
         return ResponseEntity.ok(liveCalls);
     }
 

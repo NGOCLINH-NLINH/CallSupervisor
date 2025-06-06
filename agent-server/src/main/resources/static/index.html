@@ -125,12 +125,29 @@
 <script>
     var stompClient = null;
     var liveCallsMap = {}; // Map to store calls by CallId
+    var intervalId = null;
+
+    function formatDuration(seconds) {
+        if (seconds === null || isNaN(seconds)) {
+            return 'N/A';
+        }
+        var minutes = Math.floor(seconds / 60);
+        var remainingSeconds = seconds % 60;
+        return String(minutes).padStart(2, '0') + ':' + String(remainingSeconds).padStart(2, '0');
+    }
 
     function setConnected(connected) {
         if (connected) {
             console.log("Connected to WebSocket");
+            if (intervalId === null) {
+                intervalId = setInterval(renderCallsTable, 1000); // Update table every second
+            }
         } else {
             console.log("Disconnected from WebSocket");
+            if (intervalId !== null) {
+                clearInterval(intervalId); // Stop updating when disconnected
+                intervalId = null;
+            }
             // Clear UI on disconnect
             document.getElementById('calls-table-body').innerHTML = '';
             liveCallsMap = {};
@@ -171,7 +188,7 @@
                 try {
                     var initialCalls = JSON.parse(message.body);
                     console.log("Received initial calls:", initialCalls.length);
-                    // For debug: delete liveCallsMap before adding initial calls to avoid duplicates
+                    // Delete liveCallsMap before adding initial calls to avoid duplicates
                     liveCallsMap = {};
                     initialCalls.forEach(call => updateCallDisplay(call));
                     // Request current stats after initial calls
@@ -212,7 +229,7 @@
                 liveCallsMap[channelEvent.callId] = channelEvent;
             }
         }
-        renderCallsTable();
+        // renderCallsTable();
     }
 
     function renderCallsTable() {
@@ -223,8 +240,21 @@
         var sortedCalls = Object.values(liveCallsMap).sort((a, b) => (a.createdTime || 0) - (b.createdTime || 0));
 
         sortedCalls.forEach(call => {
+            var liveTalkingDuration = 'N/A';
+            if ((call.state === 'ANSWERED' || call.state === 'BRIDGED') && call.answeredTime) {
+                var currentTime = Date.now();
+                liveTalkingDuration = Math.max(0, Math.floor((currentTime - call.answeredTime) / 1000));
+            } else if (call.state === 'UNBRIDGED' || call.state === 'DESTROYED') {
+                liveTalkingDuration = call.talkingDuration !== null ? call.talkingDuration : 'N/A';
+            }
+
             var row = tbody.insertRow();
             var statusClass = call.state ? call.state.toLowerCase() : '';
+
+            var totalDurFormatted = formatDuration(call.totalDuration);
+            var ringingDurFormatted = formatDuration(call.ringingDuration);
+            var liveTalkingDurFormatted = formatDuration(liveTalkingDuration);
+
             console.log(call.state)
             row.innerHTML = `
                     <td>${call.callId}</td>
@@ -234,7 +264,7 @@
                     <td>${call.vcNumber || 'N/A'}</td>
                     <td>${call.ownerId || 'N/A'}</td>
                     <td>${call.totalDuration !== null ? call.totalDuration : 'N/A'}</td>
-                    <td>${call.talkingDuration !== null ? call.talkingDuration : 'N/A'}</td>
+                    <td>${liveTalkingDurFormatted}</td>
                     <td>${call.ringingDuration !== null ? call.ringingDuration : 'N/A'}</td>
                     <td>${call.createdTime ? new Date(call.createdTime).toLocaleTimeString() : 'N/A'}</td>
                 `;

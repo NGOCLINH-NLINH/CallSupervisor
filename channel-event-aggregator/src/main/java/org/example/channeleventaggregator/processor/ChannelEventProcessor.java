@@ -61,7 +61,10 @@ public class ChannelEventProcessor {
 
             return kzCallTable.toStream()
                     .filter((key, value) -> value != null && value.getCallId() != null)
-                    .peek((key, value) -> System.out.println("Aggregated ChannelEvent: " + key + " -> " + value.getState() + ", Queue: " + value.getQueueId() + ", VC#: " + value.getVcNumber()));
+                    .peek((key, value) -> System.out.println("Aggregated ChannelEvent: " + key + " -> "
+                            + value.getState() + ", Queue: " + value.getQueueId() + ", VC#: " + value.getVcNumber()
+                            + ", Ans: " + value.getAnsweredTime() + ", Des: " + value.getDestroyedTime() + // <--- THÊM CÁI NÀY
+                            ", TalkDur: " + value.getTalkingDuration()));
         };
     }
 

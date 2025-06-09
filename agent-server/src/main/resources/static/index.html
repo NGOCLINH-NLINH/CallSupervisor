@@ -330,7 +330,7 @@
                     <td>${call.vcNumber || 'N/A'}</td>
                     <td>${call.ownerId || 'N/A'}</td>
                     <td>${liveTalkingDurFormatted}</td>
-                    <td>${call.ringingDuration !== null ? call.ringingDuration : 'N/A'}</td>
+                    <td>${ringingDurFormatted}</td>
                     <td>${call.createdTime ? new Date(call.createdTime).toLocaleTimeString() : 'N/A'}</td>
                 `;
             console.log("Rendered row for", call.callId, "with state", call.state, "and class", statusClass);
@@ -374,12 +374,21 @@
         renderCallsTable(); // Render table with new filters
     }
 
+    function clearFilter() {
+        document.getElementById('filter-caller-number').value = '';
+        document.getElementById('filter-queue-id').value = '';
+        document.getElementById('filter-agent-id').value = '';
+        document.getElementById('filter-vc-number').value = '';
+
+        applyFilter();
+    }
+
     function updateStatisticsDisplay(stats) {
-        document.getElementById('stat-total-active-calls').innerText = stats.totalActiveCalls !== undefined ? stats.totalActiveCalls : 0;
-        document.getElementById('stat-calls-in-queue').innerText = stats.callsInQueue !== undefined ? stats.callsInQueue : 0;
-        document.getElementById('stat-calls-answered').innerText = stats.callsAnswered !== undefined ? stats.callsAnswered : 0;
-        document.getElementById('stat-calls-bridged').innerText = stats.callsBridged !== undefined ? stats.callsBridged : 0;
-        document.getElementById('stat-avg-wait-time').innerText = stats.averageQueueWaitTimeSeconds !== undefined ? stats.averageQueueWaitTimeSeconds.toFixed(2) : '0.00';
+        document.getElementById('stat-total-active-calls').innerText = stats.totalCalls !== undefined ? stats.totalCalls : 0;
+        document.getElementById('stat-calls-in-queue').innerText = stats.queuedCalls !== undefined ? stats.queuedCalls : 0;
+        document.getElementById('stat-calls-answered').innerText = stats.answeredCalls !== undefined ? stats.answeredCalls : 0;
+        document.getElementById('stat-calls-bridged').innerText = stats.bridgedCalls !== undefined ? stats.bridgedCalls : 0;
+        document.getElementById('stat-avg-wait-time').innerText = stats.avgWaitTime !== undefined ? stats.avgWaitTime.toFixed(2) : '0.00';
     }
 
     // Initial connection

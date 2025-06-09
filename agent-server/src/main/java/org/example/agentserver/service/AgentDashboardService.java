@@ -22,27 +22,19 @@ public class AgentDashboardService {
         Collection<ChannelEvent> filteredCalls = repository.findAllActiveCalls();
 
         if (queueId != null && !queueId.isEmpty()) {
-            filteredCalls = filteredCalls.stream()
-                    .filter(call -> call.getQueueId() != null && call.getQueueId().equalsIgnoreCase(queueId))
-                    .collect(Collectors.toList());
+            filteredCalls = repository.findCallsByQueueId(queueId);
         }
 
         if (vcNumber != null && !vcNumber.isEmpty()) {
-            filteredCalls = filteredCalls.stream()
-                    .filter(call -> call.getVcNumber() != null && call.getVcNumber().equalsIgnoreCase(vcNumber))
-                    .collect(Collectors.toList());
+            filteredCalls = repository.findCallsByVcNumber(vcNumber);
         }
 
         if (callerNumber != null && !callerNumber.isEmpty()) {
-            filteredCalls = filteredCalls.stream()
-                    .filter(call -> call.getCallerIdNumber() != null && call.getCallerIdNumber().contains(callerNumber))
-                    .collect(Collectors.toList());
+            filteredCalls = repository.findCallsByCallerNumber(callerNumber);
         }
 
         if (agentId != null && !agentId.isEmpty()) {
-            filteredCalls = filteredCalls.stream()
-                    .filter(call -> call.getOwnerId() != null && call.getOwnerId().equalsIgnoreCase(agentId))
-                    .collect(Collectors.toList());
+            filteredCalls = repository.findCallsByAgentId(agentId);
         }
 
         return filteredCalls;

@@ -130,10 +130,6 @@
         <h4>Calls Bridged</h4>
         <span class="value" id="stat-calls-bridged">0</span>
     </div>
-    <div class="stat-box">
-        <h4>Avg Queue Wait Time (s)</h4>
-        <span class="value" id="stat-avg-wait-time">0.00</span>
-    </div>
 </div>
 
 <div id="filter-controls">
@@ -317,7 +313,6 @@
             var row = tbody.insertRow();
             var statusClass = call.state ? call.state.toLowerCase() : '';
 
-            var totalDurFormatted = formatDuration(call.totalDuration);
             var ringingDurFormatted = formatDuration(call.ringingDuration);
             var liveTalkingDurFormatted = formatDuration(liveTalkingDuration);
 
@@ -388,7 +383,6 @@
         document.getElementById('stat-calls-in-queue').innerText = stats.queuedCalls !== undefined ? stats.queuedCalls : 0;
         document.getElementById('stat-calls-answered').innerText = stats.answeredCalls !== undefined ? stats.answeredCalls : 0;
         document.getElementById('stat-calls-bridged').innerText = stats.bridgedCalls !== undefined ? stats.bridgedCalls : 0;
-        document.getElementById('stat-avg-wait-time').innerText = stats.avgWaitTime !== undefined ? stats.avgWaitTime.toFixed(2) : '0.00';
     }
 
     // Initial connection

@@ -16,6 +16,7 @@ services:
     ports:
       - "9092:9092"
       - "9093:9093"
+      - "9001:9001"
     depends_on:
       - zookeeper
     environment:
@@ -27,3 +28,47 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_HOSTNAME: kafka
+#      JMX_PORT: 9001
+#      KAFKA_OPTS: "-javaagent:/usr/app/jmx_prometheus_javaagent.jar=9001:/usr/app/kafka-2_0_0.yml"
+      KAFKA_OPTS: >-
+        -javaagent:/usr/app/jmx_prometheus_javaagent.jar=9001:/usr/app/kafka-2_0_0.yml
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9999
+        -Dcom.sun.management.jmxremote.rmi.port=9999
+        -Dcom.sun.management.jmxremote.local.only=false
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=kafka
+    volumes:
+      - ./jmx_exporter/kafka-2_0_0.yml:/usr/app/kafka-2_0_0.yml
+      - ./jmx_exporter/jmx_prometheus_javaagent.jar:/usr/app/jmx_prometheus_javaagent.jar
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - kafka
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana_data:

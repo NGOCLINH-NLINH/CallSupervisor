@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring_boot_apps'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+#      - targets: ['producer-app:8080', 'aggregator-app:8081', 'agent-server-app:8082']
+      - targets: ['host.docker.internal:8080', 'host.docker.internal:8081', 'host.docker.internal:8082']
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'kafka_jmx'
+    static_configs:
+      - targets: ['kafka:9001']
+        labels:
+          group: 'kafka-jmx'

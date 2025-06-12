@@ -216,7 +216,7 @@
     }
 
     function connect() {
-        var socket = new SockJS('http://localhost:8082/ws'); // Connect to the WebSocket endpoint
+        var socket = new SockJS('http://localhost:80/ws'); // Connect to the WebSocket endpoint
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function (frame) {
             setConnected(true);
@@ -261,7 +261,7 @@
                 }
             });
 
-        }, function (error) { // onError callback
+        }, function (error) {
             console.error("STOMP error:", error);
             setConnected(false);
             setTimeout(connect, 5000); // Try to reconnect after 5 seconds

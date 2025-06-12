@@ -5,8 +5,19 @@ scrape_configs:
   - job_name: 'spring_boot_apps'
     metrics_path: '/actuator/prometheus'
     static_configs:
-#      - targets: ['producer-app:8080', 'aggregator-app:8081', 'agent-server-app:8082']
-      - targets: ['host.docker.internal:8080', 'host.docker.internal:8081', 'host.docker.internal:8082']
+#      - targets: ['host.docker.internal:8080', 'host.docker.internal:8081', 'host.docker.internal:8082']
+      - targets: [ 'producer-app:8080' ]
+        labels:
+          component: 'producer'
+
+      - targets: [ 'aggregator-app-1:8081', 'aggregator-app-2:8081' ] # Aggregator instances
+        labels:
+          component: 'aggregator'
+
+      - targets: [ 'agent-server-app-1:8082', 'agent-server-app-2:8082' ] # Agent Server instances
+        labels:
+          component: 'agent-server'
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

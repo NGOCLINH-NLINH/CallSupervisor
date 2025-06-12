@@ -22,7 +22,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,LISTENER_EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,LISTENER_EXTERNAL://host.docker.internal:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -43,6 +43,134 @@ services:
     volumes:
       - ./jmx_exporter/kafka-2_0_0.yml:/usr/app/kafka-2_0_0.yml
       - ./jmx_exporter/jmx_prometheus_javaagent.jar:/usr/app/jmx_prometheus_javaagent.jar
+#
+#  kafka-ui:
+#    image: provectuslabs/kafka-ui
+#    ports:
+#      - "8085:8085"
+#    environment:
+#      - KAFKA_CLUSTERS_0_NAME=local
+#      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9093
+
+  producer-app:
+    build:
+      context: ./call-event-producer-service
+      dockerfile: Dockerfile
+    hostname: producer-app
+    container_name: producer-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_TOPIC_OUTPUT_STREAM: channel-event-aggregator-input1
+      KAFKA_TOPIC_AGENT_STATUS_STREAM: agent-status-topic
+      SERVER_PORT: 8080
+
+  aggregator-app:
+    build:
+      context: ./channel-event-aggregator
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - producer-app
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_APPLICATION_ID: channel-event-aggregator-app
+      SPRING_CLOUD_STREAM_FUNCTION_DEFINITION: processChannelEvents
+      SERVER_PORT: 8081
+      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_IN_0_DESTINATION: channel-event-aggregator-input1
+      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_IN_0_GROUP: channel-event-aggregator-consumer-group
+      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_DESTINATION: channel-event-aggregator-output
+      SPRING_CLOUD_STREAM_KAFKA_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_PRODUCER_CONFIGURATION_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_CLOUD_STREAM_KAFKA_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_PRODUCER_CONFIGURATION_VALUE_SERIALIZER: org.springframework.kafka.support.serializer.JsonSerializer
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_DEFAULT_KEY_SERDE: org.apache.kafka.common.serialization.Serdes$StringSerde
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_DEFAULT_VALUE_SERDE: org.apache.kafka.common.serialization.Serdes$StringSerde
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_AUTO_OFFSET_RESET: earliest
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_PROCESSING_GUARANTEE: exactly_once_v2
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_STATE_DIR: /tmp/kafka-streams/${HOSTNAME}
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_COMMIT_INTERVAL_MS: 100
+      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_DLQ_ENABLED: "false"
+    deploy:
+      replicas: 2
+#
+#  aggregator-app-2:
+#    build:
+#      context: ./channel-event-aggregator
+#      dockerfile: Dockerfile
+#    hostname: aggregator-app-2
+#    container_name: aggregator-app-2
+#    ports:
+#      - "8083:8081"
+#    depends_on:
+#      - kafka
+#      - producer-app
+#    environment:
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_APPLICATION_ID: channel-event-aggregator-app
+#      SPRING_CLOUD_STREAM_FUNCTION_DEFINITION: processChannelEvents
+#      SERVER_PORT: 8081
+#      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_IN_0_DESTINATION: channel-event-aggregator-input1
+#      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_IN_0_GROUP: channel-event-aggregator-consumer-group
+#      SPRING_CLOUD_STREAM_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_DESTINATION: channel-event-aggregator-output
+#      SPRING_CLOUD_STREAM_KAFKA_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_PRODUCER_CONFIGURATION_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+#      SPRING_CLOUD_STREAM_KAFKA_BINDINGS_PROCESSCHANNELEVENTS_OUT_0_PRODUCER_CONFIGURATION_VALUE_SERIALIZER: org.springframework.kafka.support.serializer.JsonSerializer
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_DEFAULT_KEY_SERDE: org.apache.kafka.common.serialization.Serdes$StringSerde
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_DEFAULT_VALUE_SERDE: org.apache.kafka.common.serialization.Serdes$StringSerde
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_AUTO_OFFSET_RESET: earliest
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_PROCESSING_GUARANTEE: exactly_once_v2
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_STATE_DIR: /tmp/kafka-streams
+#      SPRING_CLOUD_STREAM_KAFKA_STREAMS_BINDER_CONFIGURATION_COMMIT_INTERVAL_MS: 100
+
+  agent-server-app-1:
+    build:
+      context: ./agent-server
+      dockerfile: Dockerfile
+    hostname: agent-server-app-1
+    container_name: agent-server-app-1
+    ports:
+      - "8082:8082"
+    depends_on:
+      - kafka
+      - aggregator-app
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      SPRING_KAFKA_CONSUMER_GROUP_ID: agent-server-consumer-group
+      KAFKA_TOPIC_AGGREGATOR_OUTPUT_TOPIC_NAME: channel-event-aggregator-output
+      KAFKA_TOPIC_AGENT_STATUS_INPUT_STREAM: agent-status-topic
+      SERVER_PORT: 8082
+      SPRING_KAFKA_CONSUMER_PROPERTIES_JSON_TRUSTED_PACKAGES: org.example.commonmodel.model,org.example.calleventproducerservice.model,java.util,java.lang
+
+  agent-server-app-2:
+    build:
+      context: ./agent-server
+      dockerfile: Dockerfile
+    hostname: agent-server-app-2
+    container_name: agent-server-app-2
+    ports:
+      - "8084:8082"
+    depends_on:
+      - kafka
+      - aggregator-app
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      SPRING_KAFKA_CONSUMER_GROUP_ID: agent-server-consumer-group
+      KAFKA_TOPIC_AGGREGATOR_OUTPUT_TOPIC_NAME: channel-event-aggregator-output
+      KAFKA_TOPIC_AGENT_STATUS_INPUT_STREAM: agent-status-topic
+      SERVER_PORT: 8082
+      SPRING_KAFKA_CONSUMER_PROPERTIES_JSON_TRUSTED_PACKAGES: org.example.commonmodel.model,org.example.calleventproducerservice.model,java.util,java.lang
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-load-balancer
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - agent-server-app-1
+      - agent-server-app-2
 
   prometheus:
     image: prom/prometheus:latest

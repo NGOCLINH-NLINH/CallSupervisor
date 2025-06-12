@@ -23,6 +23,7 @@
         <module>common-model</module>
         <module>call-event-producer-service</module>
         <module>channel-event-aggregator</module>
+        <module>agent-server</module>
     </modules>
 
     <properties>
